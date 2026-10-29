@@ -27,22 +27,60 @@ def render_country(country, countries_data):
 
     st.header(f"Population Timeline of {country}")
 
-    
-    population = pd.DataFrame(country_to_view[0]["populationCounts"])
+    population_df = pd.DataFrame(country_to_view[0]["populationCounts"])
 
-    fig = px.bar(population, x="year", y="value", title="Population Growth Over Time", labels={"year" : "Year", "value" : "Population"})
+    latest_year = population_df.iloc[-1]["year"]
+    latest_population = population_df.iloc[-1]["value"]
+    earliest_year = population_df.iloc[0]["year"]
+    earliest_population = population_df.iloc[0]["value"]
+
+    left, right = st.columns(2)
+    left.metric(f"Population in {latest_year}", f"{latest_population:,.0f}")
+    right.metric(f"Population in {earliest_year}", f"{earliest_population:,.0f}")
+
+    fig = px.bar(population_df, x="year", y="value", title="Population Growth Over Time", labels={"year" : "Year", "value" : "Population"}, color="value", color_continuous_scale="Plasma")
     st.plotly_chart(fig, use_container_width=True)
 
 def render_home_page():
     st.title(body="Country Population Viewer")
     
     st.write("""
-    Welcome to the Country Population Viewer.
-    The purpose of this app is to view and analyze population metrics around the world.
+    Welcome to the Country Population Viewer. 
 
-    To view insights, navigate the pages using the sidebar on the left.""")
+    This page provides interactive visualizations to help you understand how populations have evolved over time across the globe.""")
 
-    st.image(image="https://geology.com/world/world-map-360.gif")
+
+    st.markdown("""
+    * **World Population:** View aggregated global growth trajectories over time.
+    * **Country Insights:** Select specific nations to examine historical population trends and milestones.
+    """)
+
+    st.info("Select a page from the sidebar on the left to begin exploring.")
+    
+    st.image(image="https://geology.com/world/world-map-360.gif", caption="Global Map Overview", use_container_width=True)
+
+def render_world_population(countries_data):
+    world_data = [item for item in countries_data if item["country"] == "World"]
+
+    if not world_data:
+        st.error("World population data cannot be found.")
+        return
+
+    st.header("Global Population Overview")
+
+    population_df = pd.DataFrame(world_data[0]["populationCounts"])
+
+    latest_year = population_df.iloc[-1]["year"]
+    latest_population = population_df.iloc[-1]["value"]
+    earliest_year = population_df.iloc[0]["year"]
+    earliest_population = population_df.iloc[0]["value"]
+
+    left, right = st.columns(2)
+    left.metric(f"Population in {latest_year}", f"{latest_population:,.0f}")
+    right.metric(f"Population in {earliest_year}", f"{earliest_population:,.0f}")
+
+    fig = px.bar(population_df, x="year", y="value", title="Global Population Growth Over Time", labels={"year" : "Year", "value" : "Population"}, color="value", color_continuous_scale="Plasma")
+    st.plotly_chart(fig, use_container_width=True)
 
 def main():
     response = requests.get(url=URL).json()
@@ -54,13 +92,12 @@ def main():
         render_home_page()
 
     elif current_page == "World Population":
-        render_country("World", countries_data)
+        render_world_population(countries_data)
 
     elif current_page == "Country Insights":
         countries = get_countries(countries_data) 
         current_country = st.selectbox(label="Select a Country", options=countries)
         render_country(current_country, countries_data)
-
 
 if __name__ == "__main__":
     main()
