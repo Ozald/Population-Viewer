@@ -82,6 +82,44 @@ def render_world_population(countries_data):
     fig = px.bar(population_df, x="year", y="value", title="Global Population Growth Over Time", labels={"year" : "Year", "value" : "Population"}, color="value", color_continuous_scale="Plasma")
     st.plotly_chart(fig, use_container_width=True)
 
+    st.subheader("Top 10 Most Populated Countries")
+
+    country_populations = []
+    for item in countries_data[46:]:
+        country_name = item["country"]
+        country_population = item["populationCounts"]
+
+        if country_population and country_name != "World":
+            latest = country_population[-1]
+            country_populations.append({
+                "country": country_name,
+                "population": latest["value"],
+                "year": latest["year"]
+            })
+
+    if country_populations:
+        countries_df = pd.DataFrame(country_populations)
+        countries_df = countries_df.sort_values(by="population", ascending=False)
+
+        top_df = countries_df.head(10).copy()
+
+        sum = countries_df.iloc[10:]["population"].sum()
+        row = pd.DataFrame([{"country": "Other Countries", "population": sum, "year": top_df["year"].iloc[0]}])
+
+        pie_df = pd.concat([top_df, row], ignore_index=True)
+
+        pie = px.pie(
+            pie_df,
+            names="country",
+            values="population",
+            title="Global Population Distribution",
+            hole=0.4,
+            color_discrete_sequence=px.colors.sequential.Electric
+        )
+        
+        pie.update_traces(textposition="inside", textinfo="percent")
+        st.plotly_chart(pie)
+
 def main():
     response = requests.get(url=URL).json()
     countries_data = response.get("data", [])
